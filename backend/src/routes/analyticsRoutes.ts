@@ -4,6 +4,6 @@ import { requireAuth, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-router.get('/seller/dashboard', requireAuth, requireRole(['Seller', 'Admin']), analyticsController.getSellerDashboard);
+router.get('/seller/dashboard', requireAuth, analyticsController.getSellerDashboard);
 
 export default router;

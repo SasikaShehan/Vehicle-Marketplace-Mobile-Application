@@ -17,6 +17,7 @@ export const vehicleController = {
       const parsedData = createVehicleSchema.safeParse(req.body);
       
       if (!parsedData.success) {
+        console.error('Validation errors:', JSON.stringify(parsedData.error.issues, null, 2));
         throw new ValidationError('Validation failed', parsedData.error.issues);
       }
 

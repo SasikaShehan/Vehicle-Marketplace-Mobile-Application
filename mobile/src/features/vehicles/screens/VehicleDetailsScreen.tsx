@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, Share, Dimensions, StatusBar, Platform } from 'react-native';
 import { vehicleService } from '../../../services/vehicleService';
 import { useCompareStore } from '../../../store/compareStore';
-import { Heart, MessageCircle, Share2, AlertTriangle, MapPin, Gauge, Box, Columns, Info } from 'lucide-react-native';
+import { Heart, MessageCircle, Share2, AlertTriangle, MapPin, Gauge, Box, Info, ChevronLeft, PhoneCall } from 'lucide-react-native';
 import { api } from '../../../services/api';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const { width } = Dimensions.get('window');
 
 export default function VehicleDetailsScreen({ route, navigation }: any) {
   const { vehicleId } = route.params;
@@ -65,90 +68,100 @@ export default function VehicleDetailsScreen({ route, navigation }: any) {
     ]);
   };
 
-  const toggleFavorite = async () => {
-    setIsFavorite(!isFavorite);
-  };
-
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#007AFF" /></View>;
-  if (!vehicle) return <View style={styles.center}><Text>Vehicle not found</Text></View>;
+  if (!vehicle) return <View style={styles.center}><Text style={styles.errorText}>Vehicle not found</Text></View>;
 
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Image Gallery */}
-        <Image 
-          source={{ uri: vehicle.images?.[0]?.url || 'https://via.placeholder.com/800x600' }} 
-          style={styles.heroImage} 
-        />
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>{'< Back'}</Text>
-        </TouchableOpacity>
-
-        {/* Header */}
-        <View style={styles.headerInfo}>
-          <View style={styles.titleRow}>
-            <Text style={styles.title}>{vehicle.year} {vehicle.make} {vehicle.model}</Text>
-            <TouchableOpacity onPress={toggleFavorite}>
-              <Heart color={isFavorite ? "#fa5252" : "#6c757d"} fill={isFavorite ? "#fa5252" : "transparent"} size={28} />
+        <View style={styles.imageContainer}>
+          <Image 
+            source={{ uri: vehicle.images?.[0]?.url || 'https://via.placeholder.com/800x600' }} 
+            style={styles.heroImage} 
+          />
+          <View style={styles.imageOverlay} />
+          <SafeAreaView style={styles.topActions}>
+            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.goBack()}>
+              <ChevronLeft color="#1C1C1E" size={24} />
             </TouchableOpacity>
+            <View style={styles.rightActions}>
+              <TouchableOpacity style={styles.iconButton} onPress={handleShare}>
+                <Share2 color="#1C1C1E" size={22} />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.iconButton, { marginLeft: 10 }]} onPress={() => setIsFavorite(!isFavorite)}>
+                <Heart color={isFavorite ? "#fa5252" : "#1C1C1E"} fill={isFavorite ? "#fa5252" : "transparent"} size={22} />
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </View>
+
+        {/* Header Details */}
+        <View style={styles.contentContainer}>
+          <View style={styles.badgeRow}>
+            <View style={styles.badge}><Text style={styles.badgeText}>{vehicle.condition}</Text></View>
+            <View style={[styles.badge, { backgroundColor: '#E3F2FD' }]}><Text style={[styles.badgeText, { color: '#007AFF' }]}>{vehicle.year}</Text></View>
           </View>
+          
+          <Text style={styles.title}>{vehicle.make} {vehicle.model}</Text>
           <Text style={styles.price}>Rs. {vehicle.price.toLocaleString()}</Text>
+          
           <View style={styles.locationRow}>
-            <MapPin color="#6c757d" size={16} />
+            <MapPin color="#8E8E93" size={18} />
             <Text style={styles.locationText}>{vehicle.location?.city}, {vehicle.location?.district}</Text>
           </View>
         </View>
 
-        {/* Quick Specs */}
-        <View style={styles.quickSpecs}>
-          <View style={styles.specItem}>
-            <Gauge color="#495057" size={24} />
+        {/* Quick Specs Grid */}
+        <View style={styles.specsGrid}>
+          <View style={styles.specCard}>
+            <View style={styles.specIconWrap}><Gauge color="#007AFF" size={22} /></View>
+            <Text style={styles.specLabel}>Mileage</Text>
             <Text style={styles.specValue}>{vehicle.mileage.toLocaleString()} km</Text>
           </View>
-          <View style={styles.specItem}>
-            <Box color="#495057" size={24} />
+          <View style={styles.specCard}>
+            <View style={styles.specIconWrap}><Box color="#007AFF" size={22} /></View>
+            <Text style={styles.specLabel}>Transmission</Text>
             <Text style={styles.specValue}>{vehicle.transmission}</Text>
           </View>
-          <View style={styles.specItem}>
-            <Info color="#495057" size={24} />
+          <View style={styles.specCard}>
+            <View style={styles.specIconWrap}><Info color="#007AFF" size={22} /></View>
+            <Text style={styles.specLabel}>Fuel Type</Text>
             <Text style={styles.specValue}>{vehicle.fuelType}</Text>
           </View>
         </View>
 
-        {/* Description */}
+        {/* Description Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description</Text>
+          <Text style={styles.sectionTitle}>Overview</Text>
           <Text style={styles.description}>{vehicle.description}</Text>
         </View>
 
-        {/* Full Specifications */}
+        {/* Full Specifications List */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Specifications</Text>
-          <View style={styles.specRow}><Text style={styles.specLabel}>Engine:</Text><Text style={styles.specVal}>{vehicle.engineCapacity} cc</Text></View>
-          <View style={styles.specRow}><Text style={styles.specLabel}>Body Type:</Text><Text style={styles.specVal}>{vehicle.vehicleType}</Text></View>
-          <View style={styles.specRow}><Text style={styles.specLabel}>Condition:</Text><Text style={styles.specVal}>{vehicle.condition}</Text></View>
+          <Text style={styles.sectionTitle}>Full Specifications</Text>
+          <View style={styles.specList}>
+            <View style={styles.specRow}><Text style={styles.specRowLabel}>Engine Capacity</Text><Text style={styles.specRowValue}>{vehicle.engineCapacity} cc</Text></View>
+            <View style={styles.specRow}><Text style={styles.specRowLabel}>Body Type</Text><Text style={styles.specRowValue}>{vehicle.vehicleType}</Text></View>
+            <View style={styles.specRow}><Text style={styles.specRowLabel}>Exterior Color</Text><Text style={styles.specRowValue}>{vehicle.color}</Text></View>
+            <View style={[styles.specRow, { borderBottomWidth: 0 }]}><Text style={styles.specRowLabel}>Condition</Text><Text style={styles.specRowValue}>{vehicle.condition}</Text></View>
+          </View>
           
           <TouchableOpacity style={styles.reportBtn} onPress={handleReport}>
-            <AlertTriangle color="#fa5252" size={16} />
+            <AlertTriangle color="#fa5252" size={18} />
             <Text style={styles.reportBtnText}>Report this listing</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Sticky Bottom Action Bar */}
-      <View style={styles.bottomBar}>
-        <View style={styles.iconActions}>
-          <TouchableOpacity style={styles.iconBtn} onPress={handleShare}>
-            <Share2 color="#343a40" size={24} />
-            <Text style={styles.iconBtnText}>Share</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={handleCompare}>
-            <Columns color="#343a40" size={24} />
-            <Text style={styles.iconBtnText}>Compare</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Floating Action Bar */}
+      <View style={styles.floatingActionBar}>
+        <TouchableOpacity style={styles.compareBtn} onPress={handleCompare}>
+          <Text style={styles.compareBtnText}>Compare</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.contactBtn} onPress={handleContactSeller}>
-          <MessageCircle color="#fff" size={20} style={{ marginRight: 8 }} />
+          <PhoneCall color="#fff" size={20} style={{ marginRight: 8 }} />
           <Text style={styles.contactBtnText}>Contact Seller</Text>
         </TouchableOpacity>
       </View>
@@ -157,32 +170,48 @@ export default function VehicleDetailsScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  container: { flex: 1, backgroundColor: '#F8F9FA' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  heroImage: { width: '100%', height: 300, resizeMode: 'cover' },
-  backBtn: { position: 'absolute', top: 40, left: 20, backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 20 },
-  backBtnText: { color: '#fff', fontWeight: 'bold' },
-  headerInfo: { padding: 20, backgroundColor: '#fff' },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#343a40', flex: 1, marginRight: 10 },
-  price: { fontSize: 22, color: '#007AFF', fontWeight: 'bold', marginTop: 10 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  locationText: { color: '#6c757d', marginLeft: 5, fontSize: 14 },
-  quickSpecs: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#f1f3f5', borderBottomWidth: 1, borderBottomColor: '#f1f3f5' },
-  specItem: { alignItems: 'center' },
-  specValue: { marginTop: 8, fontSize: 14, color: '#495057', fontWeight: 'bold' },
-  section: { padding: 20, backgroundColor: '#fff', marginTop: 10 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#343a40' },
-  description: { fontSize: 15, lineHeight: 24, color: '#495057' },
-  specRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f8f9fa' },
-  specLabel: { color: '#6c757d', fontSize: 15 },
-  specVal: { color: '#343a40', fontSize: 15, fontWeight: '500' },
-  bottomBar: { flexDirection: 'row', padding: 15, backgroundColor: '#fff', elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 5 },
-  iconActions: { flexDirection: 'row', flex: 1, justifyContent: 'space-around', alignItems: 'center' },
-  iconBtn: { alignItems: 'center' },
-  iconBtnText: { fontSize: 12, marginTop: 4, color: '#343a40' },
-  contactBtn: { flex: 1, backgroundColor: '#007AFF', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderRadius: 12, paddingVertical: 12, marginLeft: 10 },
-  contactBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  reportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 20, padding: 15, backgroundColor: '#ffe3e3', borderRadius: 10 },
-  reportBtnText: { color: '#fa5252', marginLeft: 8, fontWeight: 'bold' }
+  errorText: { fontSize: 16, color: '#8E8E93', fontWeight: '500' },
+  
+  imageContainer: { width: '100%', height: 350, position: 'relative' },
+  heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  imageOverlay: { position: 'absolute', top: 0, left: 0, right: 0, height: 120, backgroundColor: 'rgba(0,0,0,0.2)' },
+  
+  topActions: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10 },
+  iconButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.9)', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  rightActions: { flexDirection: 'row' },
+  
+  contentContainer: { padding: 20, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, marginTop: -30, shadowColor: '#000', shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 5 },
+  badgeRow: { flexDirection: 'row', marginBottom: 12 },
+  badge: { backgroundColor: '#F2F2F7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginRight: 10 },
+  badgeText: { fontSize: 12, fontWeight: '700', color: '#1C1C1E', textTransform: 'uppercase' },
+  title: { fontSize: 26, fontWeight: '800', color: '#1C1C1E', marginBottom: 8, letterSpacing: -0.5 },
+  price: { fontSize: 24, fontWeight: '800', color: '#007AFF', marginBottom: 12 },
+  locationRow: { flexDirection: 'row', alignItems: 'center' },
+  locationText: { color: '#8E8E93', fontSize: 15, fontWeight: '500', marginLeft: 6 },
+  
+  specsGrid: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginTop: 10 },
+  specCard: { backgroundColor: '#fff', width: (width - 60) / 3, padding: 15, borderRadius: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  specIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  specLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 4, fontWeight: '500' },
+  specValue: { fontSize: 14, color: '#1C1C1E', fontWeight: '700' },
+  
+  section: { paddingHorizontal: 20, marginTop: 25 },
+  sectionTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E', marginBottom: 15 },
+  description: { fontSize: 15, lineHeight: 24, color: '#4A4A4A' },
+  
+  specList: { backgroundColor: '#fff', borderRadius: 16, padding: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 5, elevation: 1 },
+  specRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 15, paddingHorizontal: 15, borderBottomWidth: 1, borderBottomColor: '#F2F2F7' },
+  specRowLabel: { color: '#8E8E93', fontSize: 15, fontWeight: '500' },
+  specRowValue: { color: '#1C1C1E', fontSize: 15, fontWeight: '600' },
+  
+  reportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 20, padding: 15, backgroundColor: '#FFF0F0', borderRadius: 12 },
+  reportBtnText: { color: '#fa5252', marginLeft: 8, fontWeight: '700', fontSize: 15 },
+  
+  floatingActionBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 15, paddingBottom: Platform.OS === 'ios' ? 30 : 15, shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.05, shadowRadius: 15, elevation: 10 },
+  compareBtn: { flex: 1, backgroundColor: '#F2F2F7', paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginRight: 10 },
+  compareBtnText: { color: '#1C1C1E', fontSize: 16, fontWeight: '700' },
+  contactBtn: { flex: 2, backgroundColor: '#007AFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 16, shadowColor: '#007AFF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  contactBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });

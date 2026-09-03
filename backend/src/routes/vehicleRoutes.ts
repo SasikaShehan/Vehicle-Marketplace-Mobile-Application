@@ -18,10 +18,10 @@ router.delete('/:id/favorite', requireAuth, favoriteController.removeFavorite);
 router.post('/:id/report', requireAuth, reportController.createReport);
 
 // Protected routes (Sellers and Admins)
-router.get('/me/listings', requireAuth, requireRole(['Seller', 'Admin']), vehicleController.getMyListings);
-router.patch('/:id/status', requireAuth, requireRole(['Seller', 'Admin']), vehicleController.updateStatus);
+router.get('/me/listings', requireAuth, vehicleController.getMyListings);
+router.patch('/:id/status', requireAuth, vehicleController.updateStatus);
 
-router.post('/', requireAuth, requireRole(['Seller', 'Admin']), vehicleController.create);
+router.post('/', requireAuth, vehicleController.create);
 router.patch('/:id', requireAuth, vehicleController.update);
 router.delete('/:id', requireAuth, vehicleController.remove);
 

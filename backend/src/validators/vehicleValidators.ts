@@ -22,7 +22,7 @@ export const createVehicleSchema = z.object({
   features: z.array(z.string()).optional(),
   images: z.array(
     z.object({
-      url: z.string().url(),
+      url: z.string(),
       isPrimary: z.boolean().optional(),
       order: z.number().optional()
     })

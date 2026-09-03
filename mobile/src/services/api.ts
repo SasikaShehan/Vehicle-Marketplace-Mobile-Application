@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = 'http://localhost:5000/api/v1'; // Replace with real IP for real devices
+const API_URL = 'http://192.168.8.102:5000/api/v1'; // Replace with real IP for real devices
 
 export const api = axios.create({
   baseURL: API_URL,
